@@ -1,0 +1,13 @@
+objective:
+  - L1-regularized Quantile Regression[fit_intercept=True,reg=0.1,quantile=0.8]
+
+dataset: # dataset to run benchmark on
+  - simulated[n_samples=100, n_features=10000, rho=0.6]
+
+solver: # list of example solvers to do benchmark
+  - skglm-SmoothQuantileRegressor
+  - sklearn-QuantileRegressor
+
+# note: use more repetitions to have quantiles on the plot
+n-repetitions: 5
+max-runs: 20

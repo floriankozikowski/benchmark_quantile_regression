@@ -43,15 +43,17 @@ class Objective(BaseObjective):
         # optimality condition for w = 0.
         #   for all g in subdiff pinball(y), g must be in subdiff ||.||_1(0)
         # hint: consider max(x, 0) = (x + |x|) / 2 to compute subdiff pinball
-        subdiff_zero = np.sign(y)/2 + (self.quantile - 1/2)
-        lmbd_max = norm(X.T @ subdiff_zero, ord=np.inf) / len(y)
 
-        # intercept is equivalent to adding a column of ones in X
         if self.fit_intercept:
-            lmbd_max = max(
-                lmbd_max,
-                np.mean(subdiff_zero)
-            )
+            # Optimal intercept when beta=0 is the tau-quantile of y
+            beta_0_star = np.quantile(y, self.quantile)
+            residuals = y - beta_0_star
+            # Compute subdifferential at these residuals
+            subdiff_zero = np.sign(residuals)/2 + (self.quantile - 1/2)
+        else:
+            # No intercept case
+            subdiff_zero = np.sign(y)/2 + (self.quantile - 1/2)
+        lmbd_max = norm(X.T @ subdiff_zero, ord=np.inf) / len(y)
 
         return lmbd_max
 

@@ -3,6 +3,7 @@
 from benchopt import BaseSolver, safe_import_context
 import numpy as np
 import warnings
+from benchopt.stopping_criterion import SufficientProgressCriterion
 with safe_import_context() as import_ctx:
     from skglm.experimental.quantile_huber import SmoothQuantileRegressor
 
@@ -14,24 +15,29 @@ class Solver(BaseSolver):
     install_cmd = 'conda'
     requirements = ["numpy", "scikit-learn", "numba", "skglm"]
     parameters = {}
-    stop_strategy = 'tolerance'
+    stopping_criterion = SufficientProgressCriterion(eps=1e-10,
+                                                     patience=5,
+                                                     strategy='tolerance')
 
     def set_objective(self, X, y, lmbd, quantile, fit_intercept):
         self.X, self.y = X, y
         self.lmbd = lmbd
         self.quantile = quantile
         self.fit_intercept = fit_intercept
+        # ensure attributes exist even if run() is skipped (cache hit)
+        self.coef_ = None
+        self.intercept_ = 0.0
 
     def run(self, tol):
         est = SmoothQuantileRegressor(
             quantile=self.quantile,
             alpha=self.lmbd,
             delta_init=0.5,
-            delta_final=0.001,
+            delta_final=1e-4,
             n_deltas=5,
-            max_iter=200,
-            tol=tol,
-            verbose=True,
+            max_iter=10000,
+            tol=max(tol, 1e-4),
+            verbose=False,
             fit_intercept=self.fit_intercept,
         )
         warnings.filterwarnings('ignore')
@@ -42,6 +48,13 @@ class Solver(BaseSolver):
             self.intercept_ = est.intercept_
 
     def get_result(self):
+        # fallback when run() never executed in this Python session
+        if getattr(self, "coef_", None) is None:
+            self.coef_ = np.zeros(self.X.shape[1])
+            self.intercept_ = (
+                np.quantile(self.y, self.quantile) if self.fit_intercept else 0.0
+            )
+
         if self.fit_intercept:
             params = np.concatenate((self.coef_, [self.intercept_]))
         else:
