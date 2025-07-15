@@ -3,21 +3,21 @@
 from benchopt import BaseSolver, safe_import_context
 import numpy as np
 import warnings
-from benchopt.stopping_criterion import SufficientProgressCriterion
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 with safe_import_context() as import_ctx:
-    from skglm.experimental.quantile_huber import SmoothQuantileRegressor
+    from huberplayground import SmoothQuantileRegressorPlayground
 
 
 class Solver(BaseSolver):
     """Smooth quantile regression solver using skglm."""
-    name = 'skglm-SmoothQuantileRegressor'
+    name = 'skglm-Playground'
 
     install_cmd = 'conda'
     requirements = ["numpy", "scikit-learn", "numba", "skglm"]
     parameters = {}
-    stopping_criterion = SufficientProgressCriterion(eps=1e-10,
-                                                     patience=5,
-                                                     strategy='tolerance')
+    sampling_strategy = 'tolerance'
 
     def set_objective(self, X, y, lmbd, quantile, fit_intercept):
         self.X, self.y = X, y
@@ -28,16 +28,21 @@ class Solver(BaseSolver):
         self.coef_ = None
         self.intercept_ = 0.0
 
+    def warm_up(self):
+        # Cache pre-compilation and other one-time setups that should
+        # not be included in the benchmark timing.
+        self.run(1)  # For sampling_strategy == 'tolerance' or 'iteration'
+
     def run(self, tol):
-        est = SmoothQuantileRegressor(
+        # Main fit (timed by Benchopt)
+        est = SmoothQuantileRegressorPlayground(
             quantile=self.quantile,
             alpha=self.lmbd,
-            delta_init=0.5,
-            delta_final=1e-4,
-            n_deltas=5,
-            max_iter=10000,
+            delta_init=1,
+            delta_final=0.0001,
+            max_iter=500,
             tol=max(tol, 1e-4),
-            verbose=False,
+            verbose=True,
             fit_intercept=self.fit_intercept,
         )
         warnings.filterwarnings('ignore')
