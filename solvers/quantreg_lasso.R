@@ -1,12 +1,10 @@
-#' Run L1-penalized quantreg quantile regression
-#' @param X Numeric matrix of predictors
-#' @param y Numeric vector of response
-#' @param tau Quantile level (between 0 and 1)
-#' @param lmbd Regularization parameter
-#' @param intercept Logical, whether to fit intercept
-#' @return Coefficient vector
+#' @param X
+#' @param y
+#' @param tau
+#' @param lmbd
+#' @param intercept
+#' @return
 quantreg_lasso <- function(X, y, tau, lmbd, intercept = TRUE) {
-  # Load the quantreg library
   library(quantreg)
 
   if (!intercept) {
@@ -19,11 +17,11 @@ quantreg_lasso <- function(X, y, tau, lmbd, intercept = TRUE) {
     y <- y - y_mean
   }
 
-  # `rq.fit.lasso` performs L1-penalized quantile regression.
-  # The lambda parameter in `rq.fit.lasso` corresponds to `lmbd`.
+  # rq.fit.lasso performs L1-penalized quantile regression.
+  # The lambda parameter in rq.fit.lasso corresponds to lmbd.
   fit <- rq.fit.lasso(X, y, tau = tau, lambda = lmbd)
 
-  # The coefficients are returned in `fit$coef`.
+  # The coefficients are returned in fit$coef.
   # The first element is the intercept.
   beta_all <- fit$coef
 

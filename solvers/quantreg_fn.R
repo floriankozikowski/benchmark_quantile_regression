@@ -11,7 +11,7 @@ quantreg_fn <- function(X, y, tau, lmbd, intercept = TRUE) {
   data <- data.frame(y = y, X = X)
 
   if (intercept) {
-    # quantreg with formula `y ~ .` fits an intercept.
+    # quantreg with formula y ~ . fits an intercept.
     # The intercept is the first coefficient.
     fit <- rq(y ~ ., data = data, tau = tau, method = "fn")
     beta_all <- coef(fit)
@@ -21,7 +21,7 @@ quantreg_fn <- function(X, y, tau, lmbd, intercept = TRUE) {
     coeff_vals <- beta_all[-1]
     params <- c(coeff_vals, intercept_val)
   } else {
-    # `y ~ 0 + .` fits no intercept.
+    # y ~ 0 + . fits no intercept.
     fit <- rq(y ~ 0 + ., data = data, tau = tau, method = "fn")
     params <- coef(fit)
   }
