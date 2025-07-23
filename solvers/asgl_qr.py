@@ -25,6 +25,11 @@ class Solver(BaseSolver):
         self.coef_ = None
         self.intercept_ = 0.0
 
+    def warm_up(self):
+        # Cache pre-compilation and other one-time setups that should
+        # not be included in the benchmark timing.
+        self.run(1)  # For sampling_strategy == 'tolerance' or 'iteration'
+
     def run(self, tol):
         # asgl uses lambda1 for L1 penalty
         reg = Regressor(
@@ -33,6 +38,7 @@ class Solver(BaseSolver):
             lambda1=self.lmbd,
             quantile=self.quantile,
             fit_intercept=self.fit_intercept,
+            tol=max(tol, 1e-4),
         )
         warnings.filterwarnings('ignore')
         reg.fit(self.X, self.y)

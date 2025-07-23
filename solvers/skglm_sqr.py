@@ -26,6 +26,11 @@ class Solver(BaseSolver):
         self.coef_ = None
         self.intercept_ = 0.0
 
+    def warm_up(self):
+        # Cache pre-compilation and other one-time setups that should
+        # not be included in the benchmark timing.
+        self.run(1)  # For sampling_strategy == 'tolerance'
+
     def run(self, tol):
         est = SmoothQuantileRegressor(
             quantile=self.quantile,

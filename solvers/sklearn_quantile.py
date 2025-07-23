@@ -1,6 +1,5 @@
 from benchopt import BaseSolver, safe_import_context
 import numpy as np
-from benchopt.stopping_criterion import SingleRunCriterion
 
 with safe_import_context() as import_ctx:
     from sklearn.linear_model import QuantileRegressor
@@ -17,7 +16,7 @@ class Solver(BaseSolver):
         # 'solver': ['highs-ds', 'highs-ipm', 'highs',
         #            'interior-point', 'revised simplex'],
     }
-    stopping_criterion = SingleRunCriterion()
+    sampling_strategy = 'tolerance'
 
     def set_objective(self, X, y, lmbd, quantile, fit_intercept):
         self.X, self.y = X, y
@@ -28,14 +27,22 @@ class Solver(BaseSolver):
         self.coef_ = None
         self.intercept_ = 0.0
 
-    def run(self, _):
+    def run(self, tol):
+        tol = max(tol, 1e-4)
         est = QuantileRegressor(
             quantile=self.quantile,
             alpha=self.lmbd,
             fit_intercept=self.fit_intercept,
-            solver='highs',  # change to solver=self.solver if parameter is enabled
+            solver="highs",
+            solver_options={
+                "time_limit": 500,
+                "dual_feasibility_tolerance": tol
+            }
         )
         est.fit(self.X, self.y)
+        if est.coef_ is None:        # HiGHS aborted
+            raise RuntimeError(
+                "HiGHS time-limit reached before a feasible solution was found.")
         self.coef_ = est.coef_
         self.intercept_ = est.intercept_ if self.fit_intercept else 0.0
 

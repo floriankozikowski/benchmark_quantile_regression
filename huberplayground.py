@@ -182,7 +182,7 @@ class SmoothQuantileRegressorPlayground(BaseEstimator, RegressorMixin):
     """Quantile regression with progressive smoothing."""
 
     def __init__(self, quantile=0.5, alpha=0.1, delta_init=1.0, delta_final=1e-3,
-                 max_iter=1000, tol=1e-6, verbose=False,
+                 max_iter=1000, tol=1e-6, tol_ratio=1e-3, verbose=False,
                  fit_intercept=True):
         self.quantile = quantile
         self.alpha = alpha
@@ -190,6 +190,7 @@ class SmoothQuantileRegressorPlayground(BaseEstimator, RegressorMixin):
         self.delta_final = delta_final
         self.max_iter = max_iter
         self.tol = tol
+        self.tol_ratio = tol_ratio
         self.verbose = verbose
         self.fit_intercept = fit_intercept
 
@@ -214,6 +215,11 @@ class SmoothQuantileRegressorPlayground(BaseEstimator, RegressorMixin):
 
         while delta > self.delta_final:
             datafit.delta = float(delta)
+
+            # Adapt inner solver tolerance: looser for large delta, tighter for small.
+            # This improves speed by not over-solving easy (high delta) problems.
+            solver.tol = max(self.tol, self.tol_ratio * delta)
+
             prev_coef = est.coef_.copy() if hasattr(est, "coef_") else np.zeros_like(w)
             est.fit(X, y)
             w = est.coef_.copy()
@@ -225,16 +231,33 @@ class SmoothQuantileRegressorPlayground(BaseEstimator, RegressorMixin):
                 residuals = y - X @ w
                 if self.fit_intercept:
                     residuals -= est.intercept_
-                pinball_loss = np.mean(residuals * (self.quantile - (residuals < 0)))
+                pinball_loss = np.mean(
+                    residuals * (self.quantile - (residuals < 0))
+                )
                 print(
-                    f"  delta={delta:.2e}, rel_change={rel_change:.2e}, "
-                    f"pinball_loss={pinball_loss:.6f}, n_iter={est.n_iter_}")
+                    f"  delta={delta:.2e}, solver_tol={solver.tol:.2e}, "
+                    f"rel_change={rel_change:.2e}, "
+                    f"pinball_loss={pinball_loss:.6f}, "
+                    f"n_iter={est.n_iter_}"
+                )
 
-            if rel_change < self.tol:
-                delta = max(delta * 0.5, self.delta_final)
+            # Convergence for delta reduction now uses the adaptive tolerance
+            if rel_change < solver.tol:
+                # Hybrid schedule: aggressive for large delta,
+                # conservative near delta_final
+                if delta > 10 * self.delta_final:
+                    reduction = 0.1  # aggressive
+                else:
+                    reduction = 0.5  # conservative near the end
+                delta = max(delta * reduction, self.delta_final)
             else:
                 # If not converged, do not reduce delta yet
                 pass
+
+        # Always do a final fit at delta_final if not already done
+        if datafit.delta != float(self.delta_final):
+            datafit.delta = float(self.delta_final)
+            est.fit(X, y)
 
         self.est_ = est
         self.coef_ = est.coef_

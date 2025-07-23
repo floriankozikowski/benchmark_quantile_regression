@@ -40,9 +40,9 @@ class Solver(BaseSolver):
             alpha=self.lmbd,
             delta_init=1,
             delta_final=0.0001,
-            max_iter=500,
+            max_iter=516,
             tol=max(tol, 1e-4),
-            verbose=True,
+            verbose=False,
             fit_intercept=self.fit_intercept,
         )
         warnings.filterwarnings('ignore')
