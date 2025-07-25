@@ -11,13 +11,10 @@ class Solver(BaseSolver):
     requirements = ['statsmodels', 'pandas']
     sampling_strategy = 'iteration'
 
-    def skip(self, X, y, lmbd, quantile, fit_intercept):
-        # This solver does not support regularization
-        if lmbd > 0:
-            return True, "statsmodels.QuantReg does not support regularization"
-        # This is an unpenalized solver, so it may fail for n_features > n_samples
-        if X.shape[1] > X.shape[0]:
-            return True, "Unpenalized solver does not support n_features > n_samples"
+    def skip(self, X, y, lmbd, quantile, fit_intercept):  # noqa: D401, E501
+        """Skip only when design matrix is scipy sparse."""
+        if hasattr(X, "tocoo"):
+            return True, "asgl does not accept sparse design matrices."
         return False, None
 
     def set_objective(self, X, y, lmbd, quantile, fit_intercept):
@@ -31,6 +28,7 @@ class Solver(BaseSolver):
             self.X_fit = self.X
 
         self.model = sm.QuantReg(self.y, self.X_fit)
+        self.beta = np.zeros(self.X_fit.shape[1])
 
     def run(self, n_iter):
         if n_iter == 0:

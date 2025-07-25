@@ -35,7 +35,7 @@ class Solver(BaseSolver):
             fit_intercept=self.fit_intercept,
             solver="highs",
             solver_options={
-                "time_limit": 500,
+                "time_limit": 300,  # 5 minutes
                 "dual_feasibility_tolerance": tol
             }
         )

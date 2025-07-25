@@ -25,11 +25,6 @@ class Solver(BaseSolver):
         self.coef_ = None
         self.intercept_ = 0.0
 
-    def warm_up(self):
-        # Cache pre-compilation and other one-time setups that should
-        # not be included in the benchmark timing.
-        self.run(1)  # For sampling_strategy == 'tolerance' or 'iteration'
-
     def run(self, tol):
         # asgl uses lambda1 for L1 penalty
         reg = Regressor(
@@ -57,3 +52,9 @@ class Solver(BaseSolver):
         else:
             params = self.coef_
         return dict(params=params)
+
+    def skip(self, X, y, lmbd, quantile, fit_intercept):  # noqa: D401, E501
+        """Skip only when design matrix is scipy sparse."""
+        if hasattr(X, "tocoo"):
+            return True, "asgl does not accept sparse design matrices."
+        return False, None

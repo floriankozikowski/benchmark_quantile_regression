@@ -7,7 +7,6 @@ with safe_import_context() as import_ctx:
     from scipy.optimize import linprog
     from scipy.optimize import OptimizeWarning
     from scipy.linalg import LinAlgWarning
-    from scipy import sparse
 
 
 def quantile_regression(X, y, quantile, lmbd, tol, solver, fit_intercept=True):
@@ -48,9 +47,6 @@ def quantile_regression(X, y, quantile, lmbd, tol, solver, fit_intercept=True):
             np.eye(n_samples),
             -np.eye(n_samples),
         ], axis=1)
-
-    if sparse.issparse(X):
-        A_eq = sparse.csc_matrix(A_eq)
 
     b_eq = y
 
@@ -98,6 +94,11 @@ class Solver(BaseSolver):
         ],
     }
     stop_strategy = 'tolerance'
+
+    def skip(self, X, y, lmbd, quantile, fit_intercept):
+        if hasattr(X, "tocoo"):
+            return True, "scipy linprog does not support sparse input."
+        return False, None
 
     def set_objective(self, X, y, lmbd, quantile, fit_intercept):
         self.X, self.y, self.lmbd, self.quantile = X, y, lmbd, quantile

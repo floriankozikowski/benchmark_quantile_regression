@@ -1,26 +1,22 @@
+timeout: 300
+
 objective:
-  - L1-regularized Quantile Regression[fit_intercept=True,reg=0.05,quantile=0.2]
+   - L1-regularized Quantile Regression[fit_intercept=True,reg=0.05,quantile=0.2]
 
 dataset: # dataset to run benchmark on
   # - simulated
-  - simulated[n_samples=10000, n_features=10000, rho=0.6]
+  - simulated[n_samples=100, n_features=1000, rho=0.6]
+  - simulated[n_samples=1000, n_features=100, rho=0.6]
+  - simulated[n_samples=1000, n_features=1000, rho=0.6]
   # - MEG
-  # - finance # sparse dataset
+  - finance # sparse dataset
 
 solver: # list of example solvers to do benchmark
-  # - scipy-linprog[solver=highs]
-  - sklearn-QuantileRegressor
-  - skglm-SmoothQuantileRegressor
-  # - asgl-QuantileRegressor # does not support sparse input
-  # - statsmodels-qr
-  # - R-conquer # does not support sparse input
-  # - R-quantreg-fn
-  # - R-quantreg-br
-  # - R-quantreg-lasso
-
-  # - skglm-Playground
-
-
+  # - scipy-linprog # does not take sparse datasets
+  - sklearn-QuantileRegressor # works in all combinations (delete later)
+  - skglm-SmoothQuantileRegressor # works in all combinations (delete later)
+  - asgl-QuantileRegressor # does not support sparse datasets
+  - statsmodels-qr # does not support sparse datasets, would likely work with a lot of RAM
 
 
 
